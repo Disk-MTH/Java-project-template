@@ -1,0 +1,92 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
+
+group = "$groupId" + project.property('artifactId')
+version = project.property('version') + '-' + project.property('javaVersion')
+archivesBaseName = project.property('projectName')
+
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = project.property('javaVersion')
+
+jar {
+    manifest {
+        attributes(
+                'Name'     :  project.property('projectName'),
+                'Version'   : project.property('version'),
+                'Java-version'   : project.property('javaVersion'),
+                'Authors'    : "$author_name",
+                'Credits'   : "$author_credits".replace("{link_base}", "$link_base"),
+                'Description'   : project.property('description'),
+        )
+    }
+}
+
+tasks.register('sourceJar', Jar) {
+    classifier "sources"
+    from sourceSets.main.allJava
+}
+
+tasks.register('javadocJar', Jar) {
+    classifier "javadoc"
+    from javadoc
+}
+
+artifacts {
+    archives jar
+    archives sourceJar
+    archives javadocJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact tasks.sourceJar
+            artifact tasks.javadocJar
+
+            pom {
+                name = project.property('projectName')
+                version = project.property('version')
+                description = project.property('description')
+                groupId = "$groupId"
+                artifactId = project.property('artifactId')
+                url = "$link_base" + project.property('projectName')
+
+                licenses {
+                    license {
+                        name = 'GNU General Public License v3.0'
+                        url = 'https:www.gnu.org/licenses/gpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = "$author_id"
+                        name = "$author_name"
+                        email = "$author_email"
+                    }
+                }
+                scm {
+                    connection = "$scm_connection".replace("#", project.property('projectName'))
+                    developerConnection = "$scm_dev_connection".replace("#", project.property('projectName'))
+                    url = "$link_base" + project.property('projectName')
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            credentials {
+                username = "$author_name"
+                password = "$author_password"
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
